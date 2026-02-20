@@ -796,15 +796,15 @@ func createContextFileMinimal(contextFile, commitMessage, sessionID, promptFile,
 
 	var content strings.Builder
 	content.WriteString("# Session Context\n\n")
-	content.WriteString(fmt.Sprintf("**Session ID:** %s\n\n", sessionID))
-	content.WriteString(fmt.Sprintf("**Commit Message:** %s\n\n", commitMessage))
+	fmt.Fprintf(&content, "**Session ID:** %s\n\n", sessionID)
+	fmt.Fprintf(&content, "**Commit Message:** %s\n\n", commitMessage)
 	content.WriteString("## Prompt\n\n")
 	content.Write(prompt)
 	content.WriteString("\n\n## Summary\n\n")
 	content.Write(summary)
 	content.WriteString("\n\n## Key Actions\n\n")
 	for _, action := range keyActions {
-		content.WriteString(fmt.Sprintf("- %s\n", action))
+		fmt.Fprintf(&content, "- %s\n", action)
 	}
 
 	if err := os.WriteFile(contextFile, []byte(content.String()), 0o600); err != nil {

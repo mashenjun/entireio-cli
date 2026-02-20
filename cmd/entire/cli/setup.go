@@ -927,11 +927,12 @@ func runUninstall(w, errW io.Writer, force bool) error {
 	gitHooksInstalled := strategy.IsGitHookInstalled()
 	claudeHooksInstalled := checkClaudeCodeHooksInstalled()
 	geminiHooksInstalled := checkGeminiCLIHooksInstalled()
+	openCodeHooksInstalled := checkOpenCodeHooksInstalled()
 	entireDirExists := checkEntireDirExists()
 
 	// Check if there's anything to uninstall
 	if !entireDirExists && !gitHooksInstalled && sessionStateCount == 0 &&
-		shadowBranchCount == 0 && !claudeHooksInstalled && !geminiHooksInstalled {
+		shadowBranchCount == 0 && !claudeHooksInstalled && !geminiHooksInstalled && !openCodeHooksInstalled {
 		fmt.Fprintln(w, "Entire is not installed in this repository.")
 		return nil
 	}
@@ -952,12 +953,20 @@ func runUninstall(w, errW io.Writer, force bool) error {
 			fmt.Fprintf(w, "  - Shadow branches (%d)\n", shadowBranchCount)
 		}
 		switch {
+		case claudeHooksInstalled && geminiHooksInstalled && openCodeHooksInstalled:
+			fmt.Fprintln(w, "  - Agent hooks (Claude Code, Gemini CLI, OpenCode)")
+		case claudeHooksInstalled && openCodeHooksInstalled:
+			fmt.Fprintln(w, "  - Agent hooks (Claude Code, OpenCode)")
+		case geminiHooksInstalled && openCodeHooksInstalled:
+			fmt.Fprintln(w, "  - Agent hooks (Gemini CLI, OpenCode)")
 		case claudeHooksInstalled && geminiHooksInstalled:
 			fmt.Fprintln(w, "  - Agent hooks (Claude Code, Gemini CLI)")
 		case claudeHooksInstalled:
 			fmt.Fprintln(w, "  - Agent hooks (Claude Code)")
 		case geminiHooksInstalled:
 			fmt.Fprintln(w, "  - Agent hooks (Gemini CLI)")
+		case openCodeHooksInstalled:
+			fmt.Fprintln(w, "  - Agent hooks (OpenCode)")
 		}
 		fmt.Fprintln(w)
 
@@ -1072,6 +1081,18 @@ func checkGeminiCLIHooksInstalled() bool {
 	return hookAgent.AreHooksInstalled()
 }
 
+func checkOpenCodeHooksInstalled() bool {
+	ag, err := agent.Get(agent.AgentNameOpenCode)
+	if err != nil {
+		return false
+	}
+	hookAgent, ok := ag.(agent.HookSupport)
+	if !ok {
+		return false
+	}
+	return hookAgent.AreHooksInstalled()
+}
+
 // checkEntireDirExists checks if the .entire directory exists.
 func checkEntireDirExists() bool {
 	entireDirAbs, err := paths.AbsPath(paths.EntireDir)
@@ -1108,6 +1129,19 @@ func removeAgentHooks(w io.Writer) error {
 				errs = append(errs, err)
 			} else if wasInstalled {
 				fmt.Fprintln(w, "  Removed Gemini CLI hooks")
+			}
+		}
+	}
+
+	// Remove OpenCode hooks
+	openCodeAgent, err := agent.Get(agent.AgentNameOpenCode)
+	if err == nil {
+		if hookAgent, ok := openCodeAgent.(agent.HookSupport); ok {
+			wasInstalled := hookAgent.AreHooksInstalled()
+			if err := hookAgent.UninstallHooks(); err != nil {
+				errs = append(errs, err)
+			} else if wasInstalled {
+				fmt.Fprintln(w, "  Removed OpenCode hooks")
 			}
 		}
 	}

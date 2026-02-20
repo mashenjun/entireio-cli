@@ -168,6 +168,12 @@ func (s *ManualCommitStrategy) CondenseSession(repo *git.Repository, checkpointI
 		}
 	}
 
+	// Fall back to session state's accumulated token usage when transcript-based
+	// recalculation returns nil (e.g., OpenCode's transcript lacks per-message usage data).
+	if sessionData.TokenUsage == nil && state.TokenUsage != nil {
+		sessionData.TokenUsage = state.TokenUsage
+	}
+
 	// Get checkpoint store
 	store, err := s.getCheckpointStore()
 	if err != nil {
@@ -536,6 +542,13 @@ func calculateTokenUsage(agentType agent.AgentType, data []byte, startOffset int
 		return &agent.TokenUsage{}
 	}
 
+	// OpenCode tokens are computed from enriched plugin payload at checkpoint time
+	// and accumulated in SessionState.TokenUsage. The synthesized transcript does not
+	// contain per-message usage data. Return nil to trigger the nil-fallback in CondenseSession.
+	if agentType == agent.AgentTypeOpenCode {
+		return nil
+	}
+
 	// Try Gemini format first if agentType is Gemini, or as fallback if Unknown
 	if agentType == agent.AgentTypeGemini || agentType == agent.AgentTypeUnknown {
 		// Attempt to parse as Gemini JSON
@@ -637,7 +650,7 @@ func generateContextFromPrompts(prompts []string) []byte {
 		if len(displayPrompt) > 500 {
 			displayPrompt = displayPrompt[:500] + "..."
 		}
-		buf.WriteString(fmt.Sprintf("### Prompt %d\n\n", i+1))
+		fmt.Fprintf(&buf, "### Prompt %d\n\n", i+1)
 		buf.WriteString(displayPrompt)
 		buf.WriteString("\n\n")
 	}

@@ -548,6 +548,19 @@ func resumeSingleSession(ctx context.Context, ag agent.Agent, sessionID string, 
 
 	// Write the session using the agent's WriteSession method
 	if err := ag.WriteSession(agentSession); err != nil {
+		if errors.Is(err, agent.ErrResumeNotSupported) {
+			// Agent doesn't support session file restoration (e.g., OpenCode manages its own storage).
+			// Skip session write but still print resume command.
+			logging.Debug(ctx, "agent does not support session resume, skipping session write",
+				slog.String("checkpoint_id", checkpointID.String()),
+				slog.String("session_id", sessionID),
+				slog.String("agent", string(ag.Name())),
+			)
+			fmt.Fprintf(os.Stderr, "Note: %s does not support session file restoration.\n", ag.Type())
+			fmt.Fprintf(os.Stderr, "Code files have been restored. To continue, run:\n")
+			fmt.Fprintf(os.Stderr, "  %s\n", ag.FormatResumeCommand(sessionID))
+			return nil
+		}
 		logging.Error(ctx, "resume session failed during write",
 			slog.String("checkpoint_id", checkpointID.String()),
 			slog.String("session_id", sessionID),

@@ -10,6 +10,7 @@ import (
 	"github.com/entireio/cli/cmd/entire/cli/agent"
 	"github.com/entireio/cli/cmd/entire/cli/agent/claudecode"
 	"github.com/entireio/cli/cmd/entire/cli/agent/geminicli"
+	"github.com/entireio/cli/cmd/entire/cli/agent/opencode"
 	"github.com/entireio/cli/cmd/entire/cli/logging"
 	"github.com/entireio/cli/cmd/entire/cli/paths"
 
@@ -189,6 +190,47 @@ func init() {
 			return nil
 		}
 		return handleGeminiNotification()
+	})
+
+	// Register OpenCode handlers
+	RegisterHookHandler(agent.AgentNameOpenCode, opencode.HookNameSessionStart, func() error {
+		enabled, err := IsEnabled()
+		if err == nil && !enabled {
+			return nil
+		}
+		return handleSessionStartCommon()
+	})
+
+	RegisterHookHandler(agent.AgentNameOpenCode, opencode.HookNameSessionEnd, func() error {
+		enabled, err := IsEnabled()
+		if err == nil && !enabled {
+			return nil
+		}
+		return handleOpenCodeSessionEnd()
+	})
+
+	RegisterHookHandler(agent.AgentNameOpenCode, opencode.HookNameBeforeAgent, func() error {
+		enabled, err := IsEnabled()
+		if err == nil && !enabled {
+			return nil
+		}
+		return handleOpenCodeBeforeAgent()
+	})
+
+	RegisterHookHandler(agent.AgentNameOpenCode, opencode.HookNameAfterAgent, func() error {
+		enabled, err := IsEnabled()
+		if err == nil && !enabled {
+			return nil
+		}
+		return handleOpenCodeAfterAgent()
+	})
+
+	RegisterHookHandler(agent.AgentNameOpenCode, opencode.HookNameAfterTool, func() error {
+		enabled, err := IsEnabled()
+		if err == nil && !enabled {
+			return nil
+		}
+		return handleOpenCodeAfterTool()
 	})
 }
 

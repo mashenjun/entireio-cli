@@ -84,7 +84,7 @@ func (s *AutoCommitStrategy) getCheckpointStore() (*checkpoint.GitStore, error) 
 // NewAutoCommitStrategy creates a new AutoCommitStrategy instance
 //
 
-func NewAutoCommitStrategy() Strategy { //nolint:ireturn // factory returns interface by design
+func NewAutoCommitStrategy() Strategy {
 	return &AutoCommitStrategy{}
 }
 
@@ -157,6 +157,18 @@ func (s *AutoCommitStrategy) SaveChanges(ctx SaveContext) error {
 	_, err = s.commitMetadataToMetadataBranch(repo, ctx, cpID)
 	if err != nil {
 		return fmt.Errorf("failed to commit metadata to entire/checkpoints/v1 branch: %w", err)
+	}
+
+	// Accumulate token usage into session state (mirrors manual_commit_git.go:134-139)
+	if ctx.TokenUsage != nil {
+		if state, loadErr := LoadSessionState(ctx.SessionID); loadErr == nil && state != nil {
+			state.TokenUsage = accumulateTokenUsage(state.TokenUsage, ctx.TokenUsage)
+			if saveErr := SaveSessionState(state); saveErr != nil {
+				tokenLogCtx := logging.WithComponent(context.Background(), "checkpoint")
+				logging.Warn(tokenLogCtx, "failed to persist token accumulation",
+					slog.String("session_id", ctx.SessionID), slog.Any("error", saveErr))
+			}
+		}
 	}
 
 	// Log checkpoint creation

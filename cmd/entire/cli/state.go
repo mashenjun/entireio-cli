@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/entireio/cli/cmd/entire/cli/agent"
 	"github.com/entireio/cli/cmd/entire/cli/jsonutil"
 	"github.com/entireio/cli/cmd/entire/cli/paths"
 	"github.com/entireio/cli/cmd/entire/cli/strategy"
@@ -187,6 +188,57 @@ func CaptureGeminiPrePromptState(sessionID, transcriptPath string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "Captured Gemini state before prompt: %d untracked files, transcript position: %d (last msg id: %s)\n", len(untrackedFiles), startMessageIndex, lastMessageID)
+	return nil
+}
+
+// CaptureOpenCodePrePromptState captures pre-prompt state for OpenCode sessions.
+// Uses message file count as the turn-boundary position (no transcript file).
+func CaptureOpenCodePrePromptState(sessionID string) error {
+	if sessionID == "" {
+		sessionID = unknownSessionID
+	}
+
+	tmpDirAbs, err := paths.AbsPath(paths.EntireTmpDir)
+	if err != nil {
+		tmpDirAbs = paths.EntireTmpDir
+	}
+	if err := os.MkdirAll(tmpDirAbs, 0o750); err != nil {
+		return fmt.Errorf("failed to create tmp directory: %w", err)
+	}
+
+	untrackedFiles, err := getUntrackedFilesForState()
+	if err != nil {
+		return fmt.Errorf("failed to get untracked files: %w", err)
+	}
+
+	ag, agErr := agent.Get(agent.AgentNameOpenCode)
+	var messageCount int
+	if agErr == nil {
+		if oc, ok := ag.(interface{ GetMessageCount(sessionID string) int }); ok {
+			messageCount = oc.GetMessageCount(sessionID)
+		}
+	}
+
+	stateFile := prePromptStateFile(sessionID)
+	state := PrePromptState{
+		SessionID:           sessionID,
+		Timestamp:           time.Now().UTC().Format(time.RFC3339),
+		UntrackedFiles:      untrackedFiles,
+		StartMessageIndex:   messageCount,
+		StepTranscriptStart: messageCount,
+	}
+
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal state: %w", err)
+	}
+
+	if err := os.WriteFile(stateFile, data, 0o600); err != nil { //nolint:gosec // path from controlled git metadata directory
+		return fmt.Errorf("failed to write state file: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "Captured OpenCode state before prompt: %d untracked files, message count: %d\n", //nolint:gosec // writing to stderr, not HTTP response
+		len(untrackedFiles), messageCount)
 	return nil
 }
 

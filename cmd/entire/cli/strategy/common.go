@@ -810,13 +810,13 @@ func checkCanRewind() (bool, string, error) {
 	var msg strings.Builder
 	msg.WriteString("You have uncommitted changes:\n")
 	for _, f := range modified {
-		msg.WriteString(fmt.Sprintf("  modified:   %s\n", f))
+		fmt.Fprintf(&msg, "  modified:   %s\n", f)
 	}
 	for _, f := range added {
-		msg.WriteString(fmt.Sprintf("  added:      %s\n", f))
+		fmt.Fprintf(&msg, "  added:      %s\n", f)
 	}
 	for _, f := range deleted {
-		msg.WriteString(fmt.Sprintf("  deleted:    %s\n", f))
+		fmt.Fprintf(&msg, "  deleted:    %s\n", f)
 	}
 	msg.WriteString("\nPlease commit or stash your changes before rewinding.")
 
@@ -957,15 +957,15 @@ func checkCanRewindWithWarning() (bool, string, error) {
 			stats = fmt.Sprintf("-%d", c.removed)
 		}
 
-		msg.WriteString(fmt.Sprintf("  %-10s %s", c.status+":", c.filename))
+		fmt.Fprintf(&msg, "  %-10s %s", c.status+":", c.filename)
 		if stats != "" {
-			msg.WriteString(fmt.Sprintf(" (%s)", stats))
+			fmt.Fprintf(&msg, " (%s)", stats)
 		}
 		msg.WriteString("\n")
 	}
 
 	if totalAdded > 0 || totalRemoved > 0 {
-		msg.WriteString(fmt.Sprintf("\nTotal: +%d/-%d lines\n", totalAdded, totalRemoved))
+		fmt.Fprintf(&msg, "\nTotal: +%d/-%d lines\n", totalAdded, totalRemoved)
 	}
 
 	return true, msg.String(), nil

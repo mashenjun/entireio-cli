@@ -4,8 +4,13 @@
 package agent
 
 import (
+	"errors"
 	"io"
 )
+
+// ErrResumeNotSupported is returned by WriteSession() when an agent does not
+// support session file restoration (e.g., the agent manages its own storage).
+var ErrResumeNotSupported = errors.New("agent: resume not supported")
 
 // Agent defines the interface for interacting with a coding agent.
 // Each agent implementation (Claude Code, Cursor, Aider, etc.) converts its

@@ -598,22 +598,22 @@ func (s *GitStore) buildCommitMessage(opts WriteCommittedOptions, taskMetadataPa
 	var commitMsg strings.Builder
 
 	// Subject line is always the checkpoint ID for consistent formatting
-	commitMsg.WriteString(fmt.Sprintf("Checkpoint: %s\n\n", opts.CheckpointID))
+	fmt.Fprintf(&commitMsg, "Checkpoint: %s\n\n", opts.CheckpointID)
 
 	// Include custom description in body if provided (e.g., task checkpoint details)
 	if opts.CommitSubject != "" {
 		commitMsg.WriteString(opts.CommitSubject + "\n\n")
 	}
-	commitMsg.WriteString(fmt.Sprintf("%s: %s\n", trailers.SessionTrailerKey, opts.SessionID))
-	commitMsg.WriteString(fmt.Sprintf("%s: %s\n", trailers.StrategyTrailerKey, opts.Strategy))
+	fmt.Fprintf(&commitMsg, "%s: %s\n", trailers.SessionTrailerKey, opts.SessionID)
+	fmt.Fprintf(&commitMsg, "%s: %s\n", trailers.StrategyTrailerKey, opts.Strategy)
 	if opts.Agent != "" {
-		commitMsg.WriteString(fmt.Sprintf("%s: %s\n", trailers.AgentTrailerKey, opts.Agent))
+		fmt.Fprintf(&commitMsg, "%s: %s\n", trailers.AgentTrailerKey, opts.Agent)
 	}
 	if opts.EphemeralBranch != "" {
-		commitMsg.WriteString(fmt.Sprintf("%s: %s\n", trailers.EphemeralBranchTrailerKey, opts.EphemeralBranch))
+		fmt.Fprintf(&commitMsg, "%s: %s\n", trailers.EphemeralBranchTrailerKey, opts.EphemeralBranch)
 	}
 	if taskMetadataPath != "" {
-		commitMsg.WriteString(fmt.Sprintf("%s: %s\n", trailers.MetadataTaskTrailerKey, taskMetadataPath))
+		fmt.Fprintf(&commitMsg, "%s: %s\n", trailers.MetadataTaskTrailerKey, taskMetadataPath)
 	}
 
 	return commitMsg.String()

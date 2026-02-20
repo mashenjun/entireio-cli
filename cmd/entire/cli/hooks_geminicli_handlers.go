@@ -307,13 +307,13 @@ func createContextFileForGemini(contextFile, commitMessage, sessionID string, pr
 	var sb strings.Builder
 
 	sb.WriteString("# Session Context\n\n")
-	sb.WriteString(fmt.Sprintf("Session ID: %s\n", sessionID))
-	sb.WriteString(fmt.Sprintf("Commit Message: %s\n\n", commitMessage))
+	fmt.Fprintf(&sb, "Session ID: %s\n", sessionID)
+	fmt.Fprintf(&sb, "Commit Message: %s\n\n", commitMessage)
 
 	if len(prompts) > 0 {
 		sb.WriteString("## Prompts\n\n")
 		for i, p := range prompts {
-			sb.WriteString(fmt.Sprintf("### Prompt %d\n\n%s\n\n", i+1, p))
+			fmt.Fprintf(&sb, "### Prompt %d\n\n%s\n\n", i+1, p)
 		}
 	}
 
