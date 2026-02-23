@@ -140,7 +140,7 @@ func ExtractModifiedFiles(data []byte) ([]string, error) {
 
 // extractFilePathFromInput extracts the file path from a tool's input map.
 func extractFilePathFromInput(input map[string]interface{}) string {
-	for _, key := range []string{"file_path", "path", "file", "filename"} {
+	for _, key := range []string{"filePath", "file_path", "path", "file", "filename"} {
 		if v, ok := input[key]; ok {
 			if s, ok := v.(string); ok && s != "" {
 				return s
